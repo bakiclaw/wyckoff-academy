@@ -1,130 +1,133 @@
 'use client'
 
-import { useState } from 'react'
-
-// Course data
-const courses = [
-  {
-    id: 'fundamentals',
-    title: 'Wyckoff Fundamentals',
-    description: 'Master the core principles that drive market movements',
-    lessons: 8,
-    icon: '📐',
-    color: '#3B82F6'
-  },
-  {
-    id: 'accumulation',
-    title: 'Accumulation Schematics',
-    description: 'Learn to identify smart money accumulation patterns',
-    lessons: 12,
-    icon: '📈',
-    color: '#10B981'
-  },
-  {
-    id: 'distribution',
-    title: 'Distribution Schematics',
-    description: 'Spot where smart money distributes positions',
-    lessons: 10,
-    icon: '📉',
-    color: '#EF4444'
-  },
-  {
-    id: 'volume',
-    title: 'Volume Analysis',
-    description: 'Read volume like a professional trader',
-    lessons: 6,
-    icon: '📊',
-    color: '#8B5CF6'
-  },
-  {
-    id: 'psychology',
-    title: 'Trading Psychology',
-    description: 'Master your mind for trading success',
-    lessons: 5,
-    icon: '🧠',
-    color: '#F59E0B'
-  }
-]
-
-// Quick reference data
-const phases = [
-  { phase: 'A', name: 'Stop the Trend', description: 'Prior downtrend ends. Supply absorption begins.' },
-  { phase: 'B', name: 'Build Cause', description: 'Trading range forms. Smart money accumulates.' },
-  { phase: 'C', name: 'Test', description: 'Spring tests support. Last point of supply forms.' },
-  { phase: 'D', name: 'Launch', description: 'Breakout! Trend begins.' },
-  { phase: 'E', name: 'New Trend', description: 'Price moves away from trading range.' }
-]
-
-const concepts = [
-  { term: 'CO', full: 'Composite Operator', desc: 'The institutional smart money' },
-  { term: 'TR', full: 'Trading Range', desc: 'Accumulation or distribution zone' },
-  { term: 'Spring', full: 'Spring', desc: 'Test of support before breakout' },
-  { term: 'UTAD', full: 'UTAD', desc: 'Test of resistance before breakdown' },
-  { term: 'LPS', full: 'Last Point of Support', desc: 'Buying opportunity in uptrend' },
-  { term: 'LPSY', full: 'LPSY', desc: 'Last Point of Supply' }
-]
-
-// Quiz questions
-const quizQuestions = [
-  {
-    question: 'In which Wyckoff phase does the Composite Operator typically accumulate positions?',
-    options: ['Phase A', 'Phase B', 'Phase C', 'Phase D'],
-    correct: 1,
-    explanation: 'Phase B is when the cause is built - smart money accumulates in the trading range.'
-  },
-  {
-    question: 'What is a "Spring" in Wyckoff methodology?',
-    options: ['A type of candlestick', 'A test of support before breakout', 'A volume pattern', 'A trend line'],
-    correct: 1,
-    explanation: 'A Spring is a test of support that fails, showing weak supply before breakout.'
-  },
-  {
-    question: 'What does LPS stand for?',
-    options: ['Last Profit Stop', 'Last Point of Support', 'Long Position Signal', 'Limit Price Support'],
-    correct: 1,
-    explanation: 'LPS = Last Point of Support, a buying opportunity in an uptrend.'
-  }
-]
+import { useState, useEffect } from 'react'
+import { useSession, signOut } from 'next-auth/react'
+import Link from 'next/link'
+import { courses, getTotalLessons } from '@/lib/courses'
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('courses')
-  const [selectedCourse, setSelectedCourse] = useState<string | null>(null)
-  const [currentQuestion, setCurrentQuestion] = useState(0)
-  const [showResult, setShowResult] = useState(false)
-  const [score, setScore] = useState(0)
+  const { data: session } = useSession()
+  const [completedLessons, setCompletedLessons] = useState<string[]>([])
+  const [currentTab, setCurrentTab] = useState('overview')
 
-  const handleAnswer = (answerIndex: number) => {
-    if (answerIndex === quizQuestions[currentQuestion].correct) {
-      setScore(score + 1)
+  useEffect(() => {
+    if (session?.user?.email) {
+      fetch('/api/progress')
+        .then(res => res.json())
+        .then(data => {
+          const completed = data.lessons?.filter((l: any) => l.completed).map((l: any) => l.lessonId) || []
+          setCompletedLessons(completed)
+        })
+        .catch(console.error)
     }
-    if (currentQuestion < quizQuestions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1)
-    } else {
-      setShowResult(true)
-    }
-  }
+  }, [session])
 
-  const resetQuiz = () => {
-    setCurrentQuestion(0)
-    setShowResult(false)
-    setScore(0)
-  }
+  const totalLessons = getTotalLessons()
+  const completedCount = completedLessons.length
+  const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0
+
+  const tabs = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'courses', label: 'Courses' },
+    { id: 'tools', label: 'Tools' },
+    { id: 'about', label: 'About' },
+  ]
 
   return (
     <main style={{ minHeight: '100vh', backgroundColor: '#0f172a', color: 'white' }}>
       {/* Header */}
       <header style={{ 
         background: 'linear-gradient(to right, #1e3a8a, #581c87)', 
-        padding: '3rem 1rem',
+        padding: '2rem 1rem',
         textAlign: 'center'
       }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>
-          🏛️ Wyckoff Academy
-        </h1>
-        <p style={{ fontSize: '1.25rem', color: '#bfdbfe' }}>
-          Master the Wyckoff Trading Methodology through interactive learning
-        </p>
+        <div style={{ maxWidth: '56rem', margin: '0 auto' }}>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+            🏛️ Wyckoff Academy
+          </h1>
+          <p style={{ fontSize: '1.25rem', color: '#bfdbfe', marginBottom: '1rem' }}>
+            Master the Wyckoff Trading Methodology through interactive learning
+          </p>
+          
+          {session ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <img 
+                src={session.user?.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user?.name || 'User')}&background=2563eb&color=fff`}
+                alt={session.user?.name || 'User'}
+                style={{ width: '40px', height: '40px', borderRadius: '50%' }}
+              />
+              <span style={{ color: '#bfdbfe' }}>Welcome, {session.user?.name}</span>
+              <button
+                onClick={() => signOut({ callbackUrl: '/' })}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#334155',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  color: 'white',
+                  cursor: 'pointer',
+                }}
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <Link 
+              href="/login"
+              style={{
+                display: 'inline-block',
+                padding: '0.75rem 2rem',
+                backgroundColor: '#2563eb',
+                borderRadius: '0.5rem',
+                color: 'white',
+                fontWeight: 'bold',
+                textDecoration: 'none',
+              }}
+            >
+              Sign In to Track Progress
+            </Link>
+          )}
+        </div>
       </header>
+
+      {/* Progress Bar (if logged in) */}
+      {session && (
+        <div style={{ backgroundColor: '#1e293b', padding: '1rem', borderBottom: '1px solid #334155' }}>
+          <div style={{ maxWidth: '56rem', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                <span style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Your Progress</span>
+                <span style={{ fontSize: '0.875rem', color: '#60a5fa' }}>{completedCount}/{totalLessons} lessons ({progressPercent}%)</span>
+              </div>
+              <div style={{ height: '8px', backgroundColor: '#334155', borderRadius: '4px', overflow: 'hidden' }}>
+                <div 
+                  style={{ 
+                    height: '100%', 
+                    width: `${progressPercent}%`, 
+                    backgroundColor: '#10B981',
+                    borderRadius: '4px',
+                    transition: 'width 0.3s ease'
+                  }} 
+                />
+              </div>
+            </div>
+            <Link 
+              href="/courses"
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#10B981',
+                borderRadius: '0.5rem',
+                color: 'white',
+                fontSize: '0.875rem',
+                fontWeight: 'bold',
+                textDecoration: 'none',
+              }}
+            >
+              Continue →
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav style={{ 
@@ -135,22 +138,22 @@ export default function Home() {
         borderBottom: '1px solid #334155'
       }}>
         <div style={{ maxWidth: '56rem', margin: '0 auto', display: 'flex', gap: '0.5rem', padding: '0.5rem', overflowX: 'auto' }}>
-          {['courses', 'phases', 'concepts', 'quiz'].map(tab => (
+          {tabs.map(tab => (
             <button
-              key={tab}
-              onClick={() => { setActiveTab(tab); setSelectedCourse(null); }}
+              key={tab.id}
+              onClick={() => setCurrentTab(tab.id)}
               style={{
                 padding: '0.5rem 1rem',
                 borderRadius: '0.5rem',
                 fontWeight: '500',
-                backgroundColor: activeTab === tab ? '#2563eb' : '#334155',
-                color: activeTab === tab ? 'white' : '#cbd5e1',
+                backgroundColor: currentTab === tab.id ? '#2563eb' : 'transparent',
+                color: currentTab === tab.id ? 'white' : '#cbd5e1',
                 border: 'none',
                 cursor: 'pointer',
                 whiteSpace: 'nowrap'
               }}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -159,215 +162,220 @@ export default function Home() {
       {/* Content */}
       <div style={{ maxWidth: '56rem', margin: '0 auto', padding: '2rem 1rem' }}>
         
-        {/* Courses Tab */}
-        {activeTab === 'courses' && !selectedCourse && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
-            {courses.map(course => (
-              <div
-                key={course.id}
-                onClick={() => setSelectedCourse(course.id)}
-                style={{
+        {/* Overview Tab */}
+        {currentTab === 'overview' && (
+          <div style={{ display: 'grid', gap: '1.5rem' }}>
+            {/* Quick Actions */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              <Link href="/tools/chart" style={{ textDecoration: 'none' }}>
+                <div style={{
                   backgroundColor: '#1e293b',
                   borderRadius: '0.75rem',
                   padding: '1.5rem',
                   border: '1px solid #334155',
                   cursor: 'pointer',
-                  transition: 'transform 0.2s, border-color 0.2s'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = 'scale(1.02)'
-                  e.currentTarget.style.borderColor = '#3b82f6'
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)'
-                  e.currentTarget.style.borderColor = '#334155'
-                }}
-              >
-                <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>{course.icon}</div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>{course.title}</h3>
-                <p style={{ color: '#94a3b8', marginBottom: '1rem' }}>{course.description}</p>
-                <span style={{ 
-                  fontSize: '0.875rem', 
-                  backgroundColor: '#334155', 
-                  padding: '0.25rem 0.75rem', 
-                  borderRadius: '9999px' 
+                  transition: 'transform 0.2s',
                 }}>
-                  {course.lessons} lessons
-                </span>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📈</div>
+                  <h3 style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>Live Chart</h3>
+                  <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Interactive Wyckoff chart with markers</p>
+                </div>
+              </Link>
+              
+              <Link href="/schematics" style={{ textDecoration: 'none' }}>
+                <div style={{
+                  backgroundColor: '#1e293b',
+                  borderRadius: '0.75rem',
+                  padding: '1.5rem',
+                  border: '1px solid #334155',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s',
+                }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📊</div>
+                  <h3 style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>Schematics</h3>
+                  <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Wyckoff accumulation & distribution patterns</p>
+                </div>
+              </Link>
+              
+              <Link href="/courses" style={{ textDecoration: 'none' }}>
+                <div style={{
+                  backgroundColor: '#1e293b',
+                  borderRadius: '0.75rem',
+                  padding: '1.5rem',
+                  border: '1px solid #334155',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s',
+                }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📚</div>
+                  <h3 style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>Courses</h3>
+                  <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Structured learning paths</p>
+                </div>
+              </Link>
+            </div>
+
+            {/* Phases Quick Ref */}
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '0.75rem', padding: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>📊 Wyckoff Phases Quick Reference</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem' }}>
+                {[
+                  { phase: 'A', name: 'Stop Trend', color: '#3B82F6' },
+                  { phase: 'B', name: 'Build Cause', color: '#8B5CF6' },
+                  { phase: 'C', name: 'Test', color: '#F59E0B' },
+                  { phase: 'D', name: 'Launch', color: '#10B981' },
+                  { phase: 'E', name: 'New Trend', color: '#22C55E' },
+                ].map(p => (
+                  <div key={p.phase} style={{ textAlign: 'center', padding: '0.75rem', backgroundColor: '#0f172a', borderRadius: '0.5rem' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: p.color }}>{p.phase}</div>
+                    <div style={{ fontSize: '0.875rem', color: '#94a3b8' }}>{p.name}</div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+
+            {/* Key Concepts */}
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '0.75rem', padding: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>🔑 Key Concepts</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                {[
+                  { term: 'CO', full: 'Composite Operator', desc: 'Institutional smart money' },
+                  { term: 'SC', full: 'Selling Climax', desc: 'Extreme low with high volume' },
+                  { term: 'Spring', full: 'Spring', desc: 'Test of support before breakout' },
+                  { term: 'SOS', full: 'Sign of Strength', desc: 'Breakout confirming accumulation' },
+                  { term: 'LPS', full: 'Last Point of Support', desc: 'Final buying opportunity' },
+                  { term: 'BC', full: 'Buying Climax', desc: 'Extreme high with high volume' },
+                ].map(c => (
+                  <div key={c.term} style={{ padding: '0.75rem', backgroundColor: '#0f172a', borderRadius: '0.5rem' }}>
+                    <span style={{ backgroundColor: '#7c3aed', padding: '0.125rem 0.5rem', borderRadius: '0.25rem', fontFamily: 'monospace', fontWeight: 'bold', marginRight: '0.5rem' }}>
+                      {c.term}
+                    </span>
+                    <span style={{ fontSize: '0.875rem', color: '#cbd5e1' }}>{c.full}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Course Detail */}
-        {selectedCourse && (
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '0.75rem', padding: '2rem' }}>
-            <button 
-              onClick={() => setSelectedCourse(null)}
-              style={{
-                color: '#60a5fa',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                marginBottom: '1rem'
-              }}
-            >
-              ← Back to courses
-            </button>
-            <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1rem' }}>
-              {courses.find(c => c.id === selectedCourse)?.title}
-            </h2>
-            <p style={{ color: '#cbd5e1', marginBottom: '1.5rem' }}>
-              {courses.find(c => c.id === selectedCourse)?.description}
-            </p>
-            <div style={{ backgroundColor: '#0f172a', borderRadius: '0.5rem', padding: '1.5rem' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>📚 Coming Soon</h3>
+        {/* Courses Tab */}
+        {currentTab === 'courses' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+            {courses.map(course => {
+              const courseLessons = course.lessons.length
+              const courseCompleted = completedLessons.filter(id => id.startsWith(course.id)).length
+              return (
+                <Link key={course.id} href={`/courses/${course.id}`} style={{ textDecoration: 'none' }}>
+                  <div
+                    style={{
+                      backgroundColor: '#1e293b',
+                      borderRadius: '0.75rem',
+                      padding: '1.5rem',
+                      border: '1px solid #334155',
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s, border-color 0.2s',
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.02)'
+                      e.currentTarget.style.borderColor = course.color
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)'
+                      e.currentTarget.style.borderColor = '#334155'
+                    }}
+                  >
+                    <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>{course.icon}</div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>{course.title}</h3>
+                    <p style={{ color: '#94a3b8', marginBottom: '1rem', fontSize: '0.875rem' }}>{course.description}</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.875rem', backgroundColor: '#334155', padding: '0.25rem 0.75rem', borderRadius: '9999px' }}>
+                        {courseLessons} lessons
+                      </span>
+                      {session && courseCompleted > 0 && (
+                        <span style={{ fontSize: '0.75rem', color: '#10B981' }}>
+                          {courseCompleted}/{courseLessons} ✓
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Tools Tab */}
+        {currentTab === 'tools' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+            <Link href="/tools/chart" style={{ textDecoration: 'none' }}>
+              <div style={{
+                backgroundColor: '#1e293b',
+                borderRadius: '0.75rem',
+                padding: '2rem',
+                border: '1px solid #334155',
+              }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📈</div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Interactive Chart</h3>
+                <p style={{ color: '#94a3b8', marginBottom: '1rem' }}>
+                  Live candlestick chart with Wyckoff markers. Place SC, Spring, SOS, BC, UTAD and more directly on the chart.
+                </p>
+                <ul style={{ fontSize: '0.875rem', color: '#94a3b8', listStyle: 'disc', paddingLeft: '1.5rem' }}>
+                  <li>Real-time data from Binance</li>
+                  <li>Multiple timeframes (1m to 1D)</li>
+                  <li>Drag & drop Wyckoff markers</li>
+                  <li>Auto-detect accumulation/distribution</li>
+                </ul>
+              </div>
+            </Link>
+
+            <div style={{
+              backgroundColor: '#1e293b',
+              borderRadius: '0.75rem',
+              padding: '2rem',
+              border: '1px solid #334155',
+              opacity: 0.6,
+            }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📝</div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Quiz (Coming Soon)</h3>
               <p style={{ color: '#94a3b8' }}>
-                This course is under development. Check back soon for interactive lessons!
+                Test your knowledge with interactive quizzes.
+              </p>
+            </div>
+
+            <div style={{
+              backgroundColor: '#1e293b',
+              borderRadius: '0.75rem',
+              padding: '2rem',
+              border: '1px solid #334155',
+              opacity: 0.6,
+            }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Trading Journal (Coming Soon)</h3>
+              <p style={{ color: '#94a3b8' }}>
+                Track your trades and analyze your performance.
               </p>
             </div>
           </div>
         )}
 
-        {/* Phases Tab */}
-        {activeTab === 'phases' && (
-          <div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>📊 Wyckoff Phases</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {phases.map((p, i) => (
-                <div
-                  key={p.phase}
-                  style={{
-                    backgroundColor: '#1e293b',
-                    borderRadius: '0.5rem',
-                    padding: '1rem',
-                    display: 'flex',
-                    gap: '1rem',
-                    alignItems: 'center'
-                  }}
-                >
-                  <div style={{
-                    width: '3rem',
-                    height: '3rem',
-                    backgroundColor: '#2563eb',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 'bold',
-                    fontSize: '1.25rem'
-                  }}>
-                    {p.phase}
-                  </div>
-                  <div>
-                    <h3 style={{ fontWeight: 'bold' }}>{p.name}</h3>
-                    <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>{p.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Concepts Tab */}
-        {activeTab === 'concepts' && (
-          <div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>📖 Key Concepts</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
-              {concepts.map((c, i) => (
-                <div
-                  key={c.term}
-                  style={{
-                    backgroundColor: '#1e293b',
-                    borderRadius: '0.5rem',
-                    padding: '1rem'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                    <span style={{ 
-                      backgroundColor: '#7c3aed', 
-                      padding: '0.25rem 0.75rem', 
-                      borderRadius: '0.25rem',
-                      fontFamily: 'monospace',
-                      fontWeight: 'bold'
-                    }}>
-                      {c.term}
-                    </span>
-                    <span style={{ fontWeight: '600' }}>{c.full}</span>
-                  </div>
-                  <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>{c.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Quiz Tab */}
-        {activeTab === 'quiz' && (
-          <div style={{ maxWidth: '36rem', margin: '0 auto' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>🎯 Knowledge Quiz</h2>
-            
-            {!showResult ? (
-              <div style={{ backgroundColor: '#1e293b', borderRadius: '0.75rem', padding: '1.5rem' }}>
-                <div style={{ marginBottom: '1rem', color: '#94a3b8', fontSize: '0.875rem' }}>
-                  Question {currentQuestion + 1} of {quizQuestions.length}
-                </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1.5rem' }}>
-                  {quizQuestions[currentQuestion].question}
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {quizQuestions[currentQuestion].options.map((option, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleAnswer(i)}
-                      style={{
-                        width: '100%',
-                        textAlign: 'left',
-                        padding: '1rem',
-                        backgroundColor: '#334155',
-                        borderRadius: '0.5rem',
-                        border: 'none',
-                        color: 'white',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s'
-                      }}
-                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
-                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#334155'}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div style={{ backgroundColor: '#1e293b', borderRadius: '0.75rem', padding: '1.5rem', textAlign: 'center' }}>
-                <div style={{ fontSize: '3.75rem', marginBottom: '1rem' }}>
-                  {score >= 2 ? '🎉' : '📚'}
-                </div>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
-                  You scored {score} out of {quizQuestions.length}
-                </h3>
-                <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>
-                  {score >= 2 
-                    ? 'Great job! You understand Wyckoff basics!' 
-                    : 'Keep learning! Review the concepts and try again.'}
-                </p>
-                <button
-                  onClick={resetQuiz}
-                  style={{
-                    backgroundColor: '#2563eb',
-                    padding: '0.75rem 1.5rem',
-                    borderRadius: '0.5rem',
-                    fontWeight: 'bold',
-                    border: 'none',
-                    color: 'white',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Try Again
-                </button>
-              </div>
-            )}
+        {/* About Tab */}
+        {currentTab === 'about' && (
+          <div style={{ backgroundColor: '#1e293b', borderRadius: '0.75rem', padding: '2rem' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>About Wyckoff Academy</h2>
+            <p style={{ color: '#cbd5e1', marginBottom: '1rem', lineHeight: '1.6' }}>
+              Wyckoff Academy is an interactive learning platform for mastering the Wyckoff Trading Methodology. 
+              Developed by Richard D. Wyckoff in the early 20th century, this methodology focuses on understanding 
+              the actions of institutional money and using that knowledge to anticipate price movements.
+            </p>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.75rem', marginTop: '1.5rem' }}>What You'll Learn</h3>
+            <ul style={{ color: '#94a3b8', listStyle: 'disc', paddingLeft: '1.5rem', lineHeight: '1.8' }}>
+              <li>How to identify smart money accumulation and distribution patterns</li>
+              <li>Reading price and volume to anticipate market movements</li>
+              <li>The five phases of the Wyckoff cycle</li>
+              <li>Entry and exit strategies using Wyckoff principles</li>
+              <li>Trading psychology and discipline</li>
+            </ul>
+            <p style={{ color: '#64748b', marginTop: '1.5rem', fontSize: '0.875rem' }}>
+              Built for traders who want to understand the markets from the institutional perspective.
+            </p>
           </div>
         )}
       </div>
@@ -375,7 +383,7 @@ export default function Home() {
       {/* Footer */}
       <footer style={{ backgroundColor: '#1e293b', padding: '2rem 1rem', marginTop: '3rem' }}>
         <div style={{ maxWidth: '56rem', margin: '0 auto', textAlign: 'center', color: '#94a3b8' }}>
-          <p>Built for traders who want to master the markets 📈</p>
+          <p>📈 Built for traders who want to master the markets</p>
           <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>
             Based on the methodology of Richard D. Wyckoff
           </p>
